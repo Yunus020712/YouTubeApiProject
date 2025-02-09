@@ -1,0 +1,135 @@
+﻿@model List<YouTubeApiProject.Models.YouTubeVideoModel>
+
+<h2>Search YouTube Videos</h2>
+
+<!-- Search Form -->
+<form asp-action="Search" method="post" id="searchForm">
+    <input type="text" name="query" placeholder="Search for music..." class="form-control mb-2" />
+    <button type="submit" class="btn btn-success">Search</button>
+</form>
+
+<!-- Loading Spinner -->
+<div id="loader" class="hidden">
+    <div class="spinner"></div>
+    <p>Searching...</p>
+</div>
+
+<!-- Trending Music Videos Section -->
+<h3 id="trendingTitle" class="mt-4">Trending Music Videos</h3>
+<div id="trendingVideos" class="row mt-2"></div>
+
+@if (Model != null && Model.Any())
+{
+    <h3 class="mt-4">Search Results</h3>
+    <div id="searchResults" class="row mt-2">
+        @foreach (var video in Model)
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <img src="@video.ThumbnailUrl" class="card-img-top" alt="@video.Title">
+                    <div class="card-body">
+                        <h5 class="card-title">@video.Title</h5>
+                        <p class="card-text">@video.Description</p>
+                        <a href="@video.VideoUrl" target="_blank" class="btn btn-primary">Watch</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<style>
+    /* Loader styling */
+    #loader {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        z-index: 10;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+    }
+
+        #loader.visible {
+            display: flex;
+        }
+
+    .spinner {
+        width: 50px;
+        height: 50px;
+        border: 6px solid #fff;
+        border-top: 6px solid #ff0000; /* YouTube red */
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 15px;
+    }
+
+    @@keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        fetchTrendingVideos();
+
+        // Hide trending section if search results exist on page load
+        if (document.getElementById("searchResults")) {
+            document.getElementById("trendingTitle").style.display = "none";
+            document.getElementById("trendingVideos").style.display = "none";
+        }
+    });
+
+    function fetchTrendingVideos() {
+        const apiKey = "AIzaSyAbA2sHBIrkXK_9KfNb_MrDzbLq9ptL4io"; 
+        const apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&chart=mostPopular&videoCategoryId=10&regionCode=US&maxResults=6&key=${apiKey}`;
+
+        fetch(apiUrl)
+            .then(response => response.json())
+            .then(data => {
+                const trendingSection = document.getElementById("trendingVideos");
+                trendingSection.innerHTML = ""; // Clear before adding new data
+
+                data.items.forEach(video => {
+                    const videoHtml = `
+                        <div class="col-md-4 mb-4">
+                            <div class="card">
+                                <img src="${video.snippet.thumbnails.medium.url}" class="card-img-top" alt="${video.snippet.title}">
+                                <div class="card-body">
+                                    <h5 class="card-title">${video.snippet.title}</h5>
+                                    <p class="card-text">${video.snippet.description.substring(0, 80)}...</p>
+                                    <a href="https://www.youtube.com/watch?v=${video.id}" target="_blank" class="btn btn-primary">Watch</a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    trendingSection.innerHTML += videoHtml;
+                });
+            })
+            .catch(error => console.error("Error fetching trending videos:", error));
+    }
+
+    // Grab the form and loader elements
+    const searchForm = document.getElementById("searchForm");
+    const loader = document.getElementById("loader");
+
+    // Show the loader when the form is submitted
+    searchForm.addEventListener("submit", function () {
+        loader.classList.add("visible");
+
+        // Hide Trending Music Section when searching
+        document.getElementById("trendingTitle").style.display = "none";
+        document.getElementById("trendingVideos").style.display = "none";
+    });
+</script>
